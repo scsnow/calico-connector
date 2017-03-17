@@ -201,7 +201,7 @@ class CalicoConnector(object):
         return mac_addr
 
     def _add_endpoint(self, mac):
-        logging.info("Adding endpoing %s" % self.endpoint_id)
+        logging.info("Adding workload endpoint %s" % self.endpoint_id)
 
         endpoint = self._key_for_endpoint(self.endpoint_id)
         data = {"state": "active",
