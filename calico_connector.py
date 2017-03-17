@@ -90,11 +90,11 @@ class CalicoConnector(object):
                             help='Network interface prefix. Default: cali',
                             default='cali')
         parser.add_argument('--workload',
-                            help='Calico workload. Default: libnetwork',
-                            default='libnetwork')
+                            help='Calico workload. Default: vz',
+                            default='vz')
         parser.add_argument('--orchestrator',
-                            help='Calico orchestrator. Default: libnetwork',
-                            default='libnetwork')
+                            help='Calico orchestrator. Default: vz',
+                            default='vz')
         parser.add_argument('--debug',
                             help='Enable debug.',
                             action='store_true')
@@ -112,9 +112,15 @@ class CalicoConnector(object):
     def _key_for_profile(self):
         return PROFILE_DIR + '/' + self.args.profile
 
+    def _dir_for_orchestrator(self):
+        return (HOST_DIR + "/%s/workload/%s" %
+                (self.host, self.args.orchestrator))
+
+    def _dir_for_workload(self):
+        return self._dir_for_orchestrator() + '/' + self.args.workload
+
     def _dir_for_endpoint(self):
-        return (HOST_DIR + "/%s/workload/%s/%s/endpoint" %
-                (self.host, self.args.orchestrator, self.args.workload))
+        return self._dir_for_workload() + '/endpoint'
 
     def _key_for_endpoint(self, endpoint):
         return self._dir_for_endpoint() + '/' + endpoint
@@ -132,7 +138,7 @@ class CalicoConnector(object):
         try:
             prefix_value = self.client.read(prefix_key).value
         except etcd.EtcdKeyNotFound:
-            logging.debug('InterfacePrefix is not set in etcd')
+            logging.debug('InterfacePrefix key is not set in etcd')
         prefixes = prefix_value.split(',') if prefix_value else []
         if self.args.prefix not in prefixes:
             logging.info("Adding interface prefix %s to config" %
@@ -217,8 +223,35 @@ class CalicoConnector(object):
         json_data = json.dumps(data)
         self.client.write(endpoint, json_data)
 
+    def _check_orchestrator(self):
+        logging.info("Checking orchestrator %s exists" %
+                     self.args.orchestrator)
+
+        dir_key = self._dir_for_orchestrator()
+        try:
+            self.client.read(dir_key)
+        except etcd.EtcdKeyNotFound:
+            logging.info("Creating orchestrator %s" %
+                         self.args.orchestrator)
+            self.client.write(dir_key, None, dir=True)
+
+    def _check_workload(self):
+        logging.info("Checking workload %s exists" %
+                     self.args.workload)
+
+        dir_key = self._dir_for_workload()
+        try:
+            self.client.read(dir_key)
+        except etcd.EtcdKeyNotFound:
+            logging.info("Creating workload %s" %
+                         self.args.workload)
+            self.client.write(dir_key, None, dir=True)
+            self.client.write(self._dir_for_endpoint(), None, dir=True)
+
     def __call__(self, *args, **kwargs):
         self._check_prefix()
+        self._check_orchestrator()
+        self._check_workload()
         self._check_ip_not_in_use()
         self._check_profile_exists()
         self._add_bridge()
