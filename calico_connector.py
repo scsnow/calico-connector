@@ -112,9 +112,11 @@ class CalicoConnector(object):
     def _key_for_profile(self):
         return PROFILE_DIR + '/' + self.args.profile
 
+    def _dir_for_base_workload(self):
+        return HOST_DIR + "/%s/workload" % self.host
+
     def _dir_for_orchestrator(self):
-        return (HOST_DIR + "/%s/workload/%s" %
-                (self.host, self.args.orchestrator))
+        return self._dir_for_base_workload() + '/' + self.args.orchestrator
 
     def _dir_for_workload(self):
         return self._dir_for_orchestrator() + '/' + self.args.workload
@@ -150,7 +152,10 @@ class CalicoConnector(object):
     def _check_ip_not_in_use(self):
         logging.info("Checking IP %s is not already assigned" % self.args.ip)
 
-        endpoints = self.client.read(self._dir_for_endpoint())
+        # we need to walk through all endpoints across
+        # all orchestrators and workloads
+        endpoints = self.client.read(self._dir_for_base_workload(),
+                                     recursive=True)
         for endpoint in endpoints.children:
             if endpoint.value is None:
                 break
