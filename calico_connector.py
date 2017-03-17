@@ -128,8 +128,12 @@ class CalicoConnector(object):
                      self.args.prefix)
 
         prefix_key = self._key_for_config('InterfacePrefix')
-        prefix_value = self.client.read(prefix_key).value
-        prefixes = prefix_value.split(',')
+        prefix_value = None
+        try:
+            prefix_value = self.client.read(prefix_key).value
+        except etcd.EtcdKeyNotFound:
+            logging.debug('InterfacePrefix is not set in etcd')
+        prefixes = prefix_value.split(',') if prefix_value else []
         if self.args.prefix not in prefixes:
             logging.info("Adding interface prefix %s to config" %
                          self.args.prefix)
