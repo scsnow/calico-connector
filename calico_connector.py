@@ -73,11 +73,14 @@ class CalicoConnector(object):
         parser = argparse.ArgumentParser(
             description='Connects Virtuozzo CT/VM to existing Calico network.')
         parser.add_argument('--instance',
+                            required=True,
                             help='Instance name.')
         parser.add_argument('--ip',
+                            required=True,
                             help='IPv4 address to assign to '
                                  'Calico workload endpoint.')
         parser.add_argument('--profile',
+                            required=True,
                             help='Calico network profile.')
         parser.add_argument('--etcd-host',
                             help='Etcd host. Default: 127.0.0.1',
