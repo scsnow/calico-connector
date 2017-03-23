@@ -161,7 +161,7 @@ class CalicoConnector(object):
                                      recursive=True)
         for endpoint in endpoints.children:
             if endpoint.value is None:
-                break
+                continue
 
             data = json.loads(endpoint.value)
             if (self.args.ip + '/32') in data['ipv4_nets']:
