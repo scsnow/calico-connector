@@ -194,7 +194,6 @@ class CalicoConnector(object):
         logging.info("Adding new interface %s to domain %s" %
                      (self.interface.tap_name, self.args.instance))
 
-        mac_addr = None
         with LibvirtClient() as client:
             try:
                 domain = client.lookupByName(self.args.instance)
@@ -210,13 +209,11 @@ class CalicoConnector(object):
                 dom = etree.fromstring(domain.XMLDesc())
                 mac = dom.xpath("//interface/mac[../target[@dev='%s']]" %
                                 self.interface.tap_name)
-                if mac:
-                    mac_addr = mac[0].attrib['address']
-                else:
+                if not mac:
                     raise MACNotFound("Cannot resolve MAC address of %s" %
                                       self.interface.tap_name)
 
-        return mac_addr
+                return mac[0].attrib['address']
 
     def _add_endpoint(self, mac):
         logging.info("Adding workload endpoint %s" % self.endpoint_id)
